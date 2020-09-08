@@ -10,10 +10,10 @@ db:
   database: "etl"
 
 smtp:
-  host: "smtp.gmail.com"
+  host: "![Cd2rB3fL5zBses5bnf9pqg==]"
   port: "587"
-  user: "amersufi63@gmail.com"
-  password: "Iamrocking@63"
-  from_address: "amersufi63@gmail.com"
-  to_address: "amersufi7@gmail.com"
+  user: "![OpV53vVLVyAaGtN4nN6s9q1wpNzexjnG]"
+  password: "![WCep1ouiutQq0iNN2KSIxw==]"
+  from_address: "![OpV53vVLVyAaGtN4nN6s9q1wpNzexjnG]"
+  to_address: "![OpV53vVLVyBcBx5/85b0f35ofNnAiJDn]"
   subject: "Batch Processing ETL Records"

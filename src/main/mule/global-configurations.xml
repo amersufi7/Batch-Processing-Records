@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:email="http://www.mulesoft.org/schema/mule/email"
-	xmlns:db="http://www.mulesoft.org/schema/mule/db"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
-http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
 	
 	<db:config name="Database_Config" doc:name="Database Config" doc:id="4ba9b940-8c16-4a26-a261-173888b9e33f" >
 		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.database}" />
@@ -18,8 +20,13 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 			</email:properties>
 		</email:smtp-connection>
 	</email:smtp-config>
-	<configuration-properties doc:name="Configuration properties" doc:id="c8ed5df4-38c8-456f-9ff5-6862cad71b99" file="${env}-properties.yaml" />
 	<global-property doc:name="Global Property" doc:id="fda58bca-f398-42a9-ac8c-25e103a1665d" name="env" value="dev" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="cac7107d-7c6e-4325-9872-2cf3221dce8c" file="${env}-properties.yaml" key="batch">
+		<secure-properties:encrypt algorithm="Blowfish" mode="ECB"/>
+	</secure-properties:config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="d2630aaf-4b33-41e4-bfe6-ab16efe3cdbe" >
+		<http:listener-connection host="0.0.0.0" port="9090" />
+	</http:listener-config>
 	
 	
 </mule>
