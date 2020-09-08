@@ -1,0 +1,19 @@
+http:
+  host: "localhost"
+  port: "8080"
+
+db:
+  host: "localhost"
+  port: "3306"
+  user: "root"
+  password: "root"
+  database: "etl"
+
+smtp:
+  host: "smtp.gmail.com"
+  port: "587"
+  user: "amersufi63@gmail.com"
+  password: "Iamrocking@63"
+  from_address: "amersufi63@gmail.com"
+  to_address: "amersufi7@gmail.com"
+  subject: "Batch Processing ETL Records"

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="4ba9b940-8c16-4a26-a261-173888b9e33f" >
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.database}" />
+	</db:config>
+	<email:smtp-config name="Email_SMTP_Gmail" doc:name="Email SMTP" doc:id="2c6c2df1-9d12-4cfb-bf73-c633fe469ecf" >
+		<email:smtp-connection host="${smtp.host}" port="${smtp.port}" user="${smtp.user}" password="${smtp.password}" connectionTimeout="10000" readTimeout="10000" writeTimeout="10000">
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="c8ed5df4-38c8-456f-9ff5-6862cad71b99" file="${env}-properties.yaml" />
+	<global-property doc:name="Global Property" doc:id="fda58bca-f398-42a9-ac8c-25e103a1665d" name="env" value="dev" />
+	
+	
+</mule>

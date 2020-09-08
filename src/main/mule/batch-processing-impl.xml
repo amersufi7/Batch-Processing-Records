@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	
+	<flow name="batchProcessingFlow" doc:id="c82f8b75-bbbb-4883-bef5-17f78f9ba62e" >
+		<scheduler doc:name="Poll / 10 Sec" doc:id="d67c8818-86a2-42cd-a9c0-a8b9a7621688" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="10000"/>
+			</scheduling-strategy>
+		</scheduler>
+		<os:retrieve doc:name="lastOrderId" doc:id="7e2a4043-26d4-4834-a611-062e82522dc4" key="lastOrderId" target="lastOrderId">
+			<os:default-value ><![CDATA[0]]></os:default-value>
+		</os:retrieve>
+		<db:select doc:name="the Records" doc:id="80b18f30-6d16-4c91-9bb2-d4b94488a597" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT *
+FROM orders
+WHERE OrderID > :lastOrderId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{lastOrderId: vars.lastOrderId}]]]></db:input-parameters>
+		</db:select>
+		<batch:job jobName="batchProcessingJob" doc:id="f64b24ca-c442-4332-b93a-b61a226ba4a3" maxFailedRecords="10">
+			<batch:process-records >
+				<batch:step name="Batch_Step_1_Insert" doc:id="05a0d1f4-77b3-4b38-aa5f-87146f541c07" >
+					<db:insert doc:name="into status_report" doc:id="a7900759-df97-451f-98c2-c95f723f3b7f" config-ref="Database_Config">
+						<db:sql ><![CDATA[INSERT INTO status_report (OrderID, Products, RetailerName, Status, OrderDate)  
+SELECT o.OrderID, s.Product AS Products, RetailerName, os.Status, OrderDate  
+FROM orders o  
+INNER JOIN sku s ON find_in_set(s.sku , o.skus)  
+INNER JOIN order_status os ON o.OrderID = os.OrderID  
+WHERE o.OrderID > :lastOrderId AND o.OrderID = :pOrderID]]></db:sql>
+						<db:input-parameters ><![CDATA[#[{pOrderID: payload.OrderID , lastOrderId: vars.lastOrderId}]]]></db:input-parameters>
+					</db:insert>
+					<db:select doc:name="the OrderID" doc:id="157ee961-90d8-4e9b-bcbe-0d2478e1135c" config-ref="Database_Config">
+						<db:sql ><![CDATA[Select * from orders;]]></db:sql>
+					</db:select>
+					<os:store doc:name="lastOrderId" doc:id="f8c06bd8-f239-4b04-a878-c88cf9d160ee" key="lastOrderId">
+						<os:value ><![CDATA[#[max(payload.*OrderID)]]]></os:value>
+					</os:store>
+				</batch:step>
+				<batch:step name="Batch_Step_2_Validate" doc:id="816ee059-d436-4353-8741-17e4761d68a6">
+					<db:select doc:name="to check for Mismatch" doc:id="d7a45a02-fd22-478e-ac94-1ed1ed5f7636" config-ref="Database_Config">
+						<db:sql ><![CDATA[select OrderID from orders WHERE OrderID NOT IN (select OrderID from status_report);]]></db:sql>
+					</db:select>
+					<choice doc:name="Choice" doc:id="f5eaa0d3-053a-4f72-ae1c-fd4b23745b27" >
+						<when expression="#[not isEmpty(payload)]">
+							<try doc:name="Try" doc:id="84c91169-4cad-4ce9-96d1-df30cbe4070a" >
+								<raise-error doc:name="for Unmatched Record" doc:id="4c22718b-02a2-4d54-a26b-6e6fa7fabe55" type="RECORD MISMATCH:EXCEPTION" description="Record(s) in 'orders' table fails to Match with 'sku' and 'order_status'."/>
+								<error-handler >
+									<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c6a3a15f-db4c-4d53-9f07-5f90418e87bd" >
+										<set-variable value="#[error.description as String]" doc:name="to vErrorDescription" doc:id="fab6e68f-cdd5-424e-8e45-a6c59377733a" variableName="vErrorDescription"/>
+										<logger level="INFO" doc:name="for Unmatched Record" doc:id="c8da6b83-644a-4c46-ade4-89206b3c3574" message="Unmatched Record"/>
+									</on-error-propagate>
+								</error-handler>
+							</try>
+						</when>
+						<otherwise >
+							<logger level="INFO" doc:name="for No Error" doc:id="6ac8fbb2-0a51-4f38-a96c-148158e0e9f8" message="No Unmatched Records"/>
+						</otherwise>
+					</choice>
+				</batch:step>
+				<batch:step name="Batch_Step_3_Failed_Records" doc:id="442bbdd0-22ca-4b7e-a2b3-22909673e9e8" acceptPolicy="ONLY_FAILURES">
+					<ee:transform doc:name="Error to Output" doc:id="c3a1e982-ff70-4e01-9291-86c08e844713" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Error Message": vars.vErrorDescription,
+	"Record Unique ID": payload.*OrderID,
+	"Date & Time": now()
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<email:send doc:name="Email for Failed Records" doc:id="47bc6fc4-409d-4047-9c60-a34cf0aa1c7d" config-ref="Email_SMTP_Gmail" fromAddress="${smtp.from_address}" subject="${smtp.subject}">
+						<email:to-addresses >
+							<email:to-address value="${smtp.to_address}" />
+						</email:to-addresses>
+					</email:send>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Batch Job Results" doc:id="dd222719-1ada-45b7-af53-c392bfc86d50" message="#[payload]"/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>
